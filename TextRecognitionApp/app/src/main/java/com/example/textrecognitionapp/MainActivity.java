@@ -1,27 +1,28 @@
 package com.example.textrecognitionapp;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.ml.vision.FirebaseVision;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
-import com.google.firebase.ml.vision.text.FirebaseVisionText;
-import com.google.firebase.ml.vision.text.FirebaseVisionTextDetector;
+import com.google.firebase.ml.vision.document.FirebaseVisionDocumentText;
+import com.google.firebase.ml.vision.document.FirebaseVisionDocumentTextRecognizer;
 
 import java.util.List;
+
+//import com.google.firebase.ml.vision.text.FirebaseVisionTextDetector;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -55,7 +56,8 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onClick(View view) {
-                detectTextFromImage();
+                runCloudTextRecognition();
+//                detectTextFromImage();
             }
         });
     }
@@ -83,38 +85,73 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void detectTextFromImage()
-    {
-        FirebaseVisionImage firebaseVisionImage = FirebaseVisionImage.fromBitmap(imageBitmap);
-        FirebaseVisionTextDetector firebaseVisionTextDetector = FirebaseVision.getInstance().getVisionTextDetector();
-        firebaseVisionTextDetector.detectInImage(firebaseVisionImage).addOnSuccessListener(new OnSuccessListener<FirebaseVisionText>() {
-            @Override
-            public void onSuccess(FirebaseVisionText firebaseVisionText)
-            {
-                displayTextFromImage(firebaseVisionText);
+//    private void detectTextFromImage()
+//    {
+//        FirebaseVisionImage firebaseVisionImage = FirebaseVisionImage.fromBitmap(imageBitmap);
+//        FirebaseVisionTextRecognizer firebaseVisionTextRecognizer = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
+//        firebaseVisionTextRecognizer.processImage(firebaseVisionImage).addOnSuccessListener(new OnSuccessListener<FirebaseVisionText>() {
+//            @Override
+//            public void onSuccess(FirebaseVisionText firebaseVisionText)
+//            {
+//                displayTextFromImage(firebaseVisionText);
+//
+//            }
+//        }).addOnFailureListener(new OnFailureListener() {
+//            @Override
+//            public void onFailure(@NonNull Exception e) {
+//                Toast.makeText(MainActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+//                Log.d("Error: ",e.getMessage());
+//            }
+//        });
+//    }
+//
+//    private void displayTextFromImage(FirebaseVisionText firebaseVisionText)
+//    {
+//        List<FirebaseVisionText.TextBlock> blockList = firebaseVisionText.getTextBlocks();
+//        if(blockList.size() == 0){
+//            Toast.makeText(this,"no Text Found in Image",Toast.LENGTH_SHORT).show();
+//        }else {
+//            for(FirebaseVisionText.TextBlock block: firebaseVisionText.getTextBlocks())
+//            {
+//                String text = block.getText();
+//                textView.setText(text);
+//            }
+//        }
+//    }
 
+    private void runCloudTextRecognition(){
+        detectTextBtn.setEnabled(false);
+        FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(imageBitmap);
+        FirebaseVisionDocumentTextRecognizer recognizer = FirebaseVision.getInstance().getCloudDocumentTextRecognizer();
+        recognizer.processImage(image).addOnSuccessListener(new OnSuccessListener<FirebaseVisionDocumentText>() {
+            @Override
+            public void onSuccess(FirebaseVisionDocumentText firebaseVisionDocumentText) {
+                detectTextBtn.setEnabled(true);
+                processCloudTextRecognitionResult(firebaseVisionDocumentText);
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
-                Toast.makeText(MainActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                Log.d("Error: ",e.getMessage());
+                detectTextBtn.setEnabled(true);
+                e.printStackTrace();
             }
         });
     }
 
-    private void displayTextFromImage(FirebaseVisionText firebaseVisionText)
-    {
-        List<FirebaseVisionText.Block> blockList = firebaseVisionText.getBlocks();
+    private void processCloudTextRecognitionResult(FirebaseVisionDocumentText text){
+        List<FirebaseVisionDocumentText.Block> blockList = text.getBlocks();
         if(blockList.size() == 0){
-            Toast.makeText(this,"no Text Found in Image",Toast.LENGTH_SHORT).show();
-        }else {
-            for(FirebaseVisionText.Block block: firebaseVisionText.getBlocks())
+            Toast.makeText(this, "No Text Found in Image",Toast.LENGTH_SHORT).show();
+            return;
+        }
+        else {
+            for(FirebaseVisionDocumentText.Block block: text.getBlocks())
             {
-                String text = block.getText();
-                textView.setText(text);
+                String texts = block.getText();
+                textView.setText(texts);
             }
         }
+
     }
 
 
